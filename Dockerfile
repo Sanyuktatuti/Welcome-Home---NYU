@@ -1,13 +1,22 @@
-# Use an official OpenJDK runtime as the base image
-FROM openjdk:17-jdk-slim
-
-# Set the working directory inside the container
+# Use an official Maven image to build the project
+FROM maven:3.8.7-openjdk-17 AS build
 WORKDIR /app
 
-# Copy the JAR file into the container
-COPY target/*.jar app.jar
+# Copy the Maven project files
+COPY pom.xml .
+COPY src ./src
 
-# Expose the port Render will use
+# Build the application (this generates the JAR file)
+RUN mvn clean package -DskipTests
+
+# Use a lightweight Java image to run the application
+FROM openjdk:17-jdk-slim
+WORKDIR /app
+
+# Copy the generated JAR file from the previous step
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port Render requires
 EXPOSE 10000
 
 # Run the application
